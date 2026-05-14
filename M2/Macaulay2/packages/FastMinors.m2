@@ -280,9 +280,7 @@ chooseSubmatrixLargestDegree(ZZ, Matrix) := opts -> (n1, M1) -> (
     while (j >= 0) do ( --compare entry j
         newCurRow = returnRowList#j;
         i = j-1;
-        --print "here1";
         while  (i >= 0) do (--compare entry j to previous terms in the list
-            --print "here2";
             if (newCurRow >= returnRowList#i) then (newCurRow = newCurRow + 1;);
             i = i-1;
         );
@@ -374,9 +372,7 @@ chooseRandomNonzeroSubmatrix(ZZ, Matrix) := opts -> (n1, M1) -> (
   while (j >= 0) do ( --compare entry j
       newCurRow = returnRowList#j;
       i = j-1;
-      --print "here1";
       while  (i >= 0) do (--compare entry j to previous terms in the list
-          --print "here2";
           if (newCurRow >= returnRowList#i) then (newCurRow = newCurRow + 1;);
           i = i-1;
       );
@@ -650,7 +646,7 @@ reorderPolynomialRing = method(Options=>{});
 
 reorderPolynomialRing(Symbol, Ring) := opts-> (myOrder, R1) -> (
     if instance(R1, PolynomialRing) then(
-        if (debugLevel > 0) then print "reorderPolynomialRing: it is a polynomialRing";
+        if (debugLevel > 0) then printerr "reorderPolynomialRing: it is a polynomialRing";
         coeff := coefficientRing R1;
         genList := generators R1;
         newGenList := shuffle(genList);
@@ -742,7 +738,7 @@ verifyStrategy := (passedStrat) -> (
 internalChooseMinor = method(Options=>optInternalChooseMinor);
 
 internalChooseMinor(ZZ, Ideal, Matrix, Matrix) := opts -> (minorSize, I1, nonzeroM, M1) -> (
-    --if (opts.Verbose or (debugLevel > 0)) then print "internalChooseMinor: starting.";
+    --if (opts.Verbose or (debugLevel > 0)) then printerr "internalChooseMinor: starting.";
     passedStrat := opts.Strategy;
     tempHash := new MutableHashTable from {LexLargest => 0, LexSmallestTerm => 0, LexSmallest => 0, GRevLexSmallestTerm => 0, GRevLexSmallest => 0, GRevLexLargest => 0, Random => 0, RandomNonzero => 0, Points => 0};
     if (passedStrat === LexLargest) then (tempHash#LexLargest = 100; passedStrat = tempHash);
@@ -771,14 +767,14 @@ internalChooseMinor(ZZ, Ideal, Matrix, Matrix) := opts -> (minorSize, I1, nonzer
         f = map(R2, ambR);
         M2 = f(nonzeroM);
         submatrixS1 = chooseSubmatrixSmallestDegree(minorSize, M2);
-        if (opts.Verbose) or debugLevel > 1 then print "internalChooseMinor: Choosing LexSmallest";
+        if (opts.Verbose) or debugLevel > 1 then printerr "internalChooseMinor: Choosing LexSmallest";
     )
     else if (myRandom < passedStrat#LexSmallest + passedStrat#LexSmallestTerm) then (
         R2 = reorderPolynomialRing(Lex, ambR); --do the same with respect to a Lex ordering
         f = map(R2, ambR);
         M2 = f(nonzeroM);
         submatrixS1 = chooseSubmatrixSmallestDegree(minorSize, selectSmallestTerms M2);
-        if (opts.Verbose) or debugLevel > 1 then print "internalChooseMinor: Choosing LexSmallestTerm";
+        if (opts.Verbose) or debugLevel > 1 then printerr "internalChooseMinor: Choosing LexSmallestTerm";
     )
     else if (myRandom < passedStrat#LexSmallest + passedStrat#LexSmallestTerm + passedStrat#LexLargest) then
     (
@@ -786,7 +782,7 @@ internalChooseMinor(ZZ, Ideal, Matrix, Matrix) := opts -> (minorSize, I1, nonzer
         f = map(R2, ambR);
         M2 = f(M1);
         submatrixS1 = chooseSubmatrixLargestDegree(minorSize, M2);
-        if (opts.Verbose) or debugLevel > 1 then print "internalChooseMinor: Choosing LexLargest";
+        if (opts.Verbose) or debugLevel > 1 then printerr "internalChooseMinor: Choosing LexLargest";
     )
     else if (myRandom < passedStrat#LexSmallest + passedStrat#LexSmallestTerm + passedStrat#LexLargest + passedStrat#GRevLexSmallest) then
     (
@@ -795,7 +791,7 @@ internalChooseMinor(ZZ, Ideal, Matrix, Matrix) := opts -> (minorSize, I1, nonzer
         M2 = f(matrix mutM2); --put the matrix in the ring with the new order
         submatrixS1 = chooseSubmatrixSmallestDegree(minorSize, M2);
         mutM2 = replaceSmallestTerm(submatrixS1, mutM2);
-        if (opts.Verbose) or debugLevel > 1 then print "internalChooseMinor: Choosing GRevLexSmallest";
+        if (opts.Verbose) or debugLevel > 1 then printerr "internalChooseMinor: Choosing GRevLexSmallest";
     )
     else if (myRandom < passedStrat#LexSmallest + passedStrat#LexSmallestTerm + passedStrat#LexLargest + passedStrat#GRevLexSmallest + passedStrat#GRevLexSmallestTerm) then
     (
@@ -804,7 +800,7 @@ internalChooseMinor(ZZ, Ideal, Matrix, Matrix) := opts -> (minorSize, I1, nonzer
         M2 = f(matrix mutM2); --put the matrix in the ring with the new order
         submatrixS1 = chooseSubmatrixSmallestDegree(minorSize, selectSmallestTerms M2);
         mutM2 = replaceSmallestTerm(submatrixS1, mutM2);
-        if (opts.Verbose) or debugLevel > 1 then print "internalChooseMinor: Choosing GRevLexSmallestTerm";
+        if (opts.Verbose) or debugLevel > 1 then printerr "internalChooseMinor: Choosing GRevLexSmallestTerm";
     )
     else if (myRandom < passedStrat#LexSmallest + passedStrat#LexSmallestTerm + passedStrat#LexLargest + passedStrat#GRevLexSmallest + passedStrat#GRevLexSmallestTerm + passedStrat#GRevLexLargest ) then (
         R2 = reorderPolynomialRing(GRevLex, ambR);
@@ -812,28 +808,28 @@ internalChooseMinor(ZZ, Ideal, Matrix, Matrix) := opts -> (minorSize, I1, nonzer
         M2 = f(matrix mutM1); --put the matrix in the ring with the new order
         submatrixS1 = chooseSubmatrixLargestDegree(minorSize, M2);
         mutM1 = replaceLargestTerm(submatrixS1, mutM1);
-        if (opts.Verbose) or debugLevel > 1 then print "internalChooseMinor: Choosing GRevLexLargest";
+        if (opts.Verbose) or debugLevel > 1 then printerr "internalChooseMinor: Choosing GRevLexLargest";
         --this needs to be written
     )
     else if (myRandom < passedStrat#LexSmallest + passedStrat#LexSmallestTerm + passedStrat#LexLargest + passedStrat#GRevLexSmallest + passedStrat#GRevLexSmallestTerm + passedStrat#GRevLexLargest + passedStrat#Random) then (
         submatrixS1 = chooseRandomSubmatrix(minorSize, M1);
-        if (opts.Verbose) or debugLevel > 1 then print "internalChooseMinor: Choosing Random";
+        if (opts.Verbose) or debugLevel > 1 then printerr "internalChooseMinor: Choosing Random";
     )
     else if (myRandom < passedStrat#LexSmallest + passedStrat#LexSmallestTerm + passedStrat#LexLargest + passedStrat#GRevLexSmallest + passedStrat#GRevLexSmallestTerm + passedStrat#GRevLexLargest + passedStrat#Random + passedStrat#RandomNonzero) then (
         submatrixS1 = chooseRandomNonzeroSubmatrix(minorSize, M1);
-        if (opts.Verbose) or debugLevel > 1 then print "internalChooseMinor: Choosing RandomNonZero";
+        if (opts.Verbose) or debugLevel > 1 then printerr "internalChooseMinor: Choosing RandomNonZero";
     )
     else if (myRandom < passedStrat#LexSmallest + passedStrat#LexSmallestTerm + passedStrat#LexLargest + passedStrat#GRevLexSmallest + passedStrat#GRevLexSmallestTerm + passedStrat#GRevLexLargest + passedStrat#Random + passedStrat#RandomNonzero + passedStrat#Points) then (
         if (char ambR == 0) then (
-            if (opts.Verbose) or debugLevel > 1 then print "internalChooseMinor: Choosing Points, but characteristic is zero, so defaulting to random instead.";
+            if (opts.Verbose) or debugLevel > 1 then printerr "internalChooseMinor: Choosing Points, but characteristic is zero, so defaulting to random instead.";
             submatrixS1 = chooseRandomSubmatrix(minorSize, M1); 
         )
         else (
-            if (opts.Verbose) or debugLevel > 0 then print "internalChooseMinor: Choosing Points";                                    
-            try (o = findANonZeroMinor(minorSize, M1, I1, new OptionTable from opts.PointOptions);) then submatrixS1 = {o#2, o#1} else ( submatrixS1 = chooseRandomSubmatrix(minorSize, M1); if (opts.Verbose) or debugLevel > 0 then print "internalChooseMinor: failed to find a point"; );            
+            if (opts.Verbose) or debugLevel > 0 then printerr "internalChooseMinor: Choosing Points";                                    
+            try (o = findANonZeroMinor(minorSize, M1, I1, new OptionTable from opts.PointOptions);) then submatrixS1 = {o#2, o#1} else ( submatrixS1 = chooseRandomSubmatrix(minorSize, M1); if (opts.Verbose) or debugLevel > 0 then printerr "internalChooseMinor: failed to find a point"; );            
         );
     );
-    --if (opts.Verbose or (debugLevel > 0)) then print "internalChooseMinor: finished.";
+    --if (opts.Verbose or (debugLevel > 0)) then printerr "internalChooseMinor: finished.";
     return submatrixS1;
 )
 
@@ -1050,10 +1046,10 @@ projDim(Module) := opts -> (N1) -> (
     else if instance(opts.MaxMinors, ZZ) then (
         minorsCount = opts.MaxMinors;)
     else if instance(opts.MaxMinors, Function) then (
-        if (debugLevel > 0) or opts.Verbose then print "projDim:  Using passed minors function.";
+        if (debugLevel > 0) or opts.Verbose then printerr "projDim:  Using passed minors function.";
         minorsCount = (opts.MaxMinors)(myDim, possibleMinors);)        
     else (
-        if (debugLevel > 0) or opts.Verbose then print "projDim:  Using default max minors function."; 
+        if (debugLevel > 0) or opts.Verbose then printerr "projDim:  Using default max minors function."; 
         minorsCount = 5*myDim + 2*log_1.3(possibleMinors); );
     if (debugLevel > 0) or opts.Verbose then print concatenate("projDim: going to try to find ", toString minorsCount, " minors.");
     
@@ -1064,7 +1060,7 @@ projDim(Module) := opts -> (N1) -> (
     if (curDim >= 0) then (return myLength);
 
     i := myLength-1;
-    if (debugLevel > 0) or opts.Verbose then print "projDim: computed dim, now starting loop.";
+    if (debugLevel > 0) or opts.Verbose then printerr "projDim: computed dim, now starting loop.";
     while (i>opts.MinDimension) and (curDim <= -1) do (
         --print concatenate("in loop: ", toString(i));
         firstRank = (rank myRes_i)-firstRank;
@@ -1159,7 +1155,7 @@ isRankAtLeast = method(Options => optIsRankAtLeast);
 isRankAtLeast(ZZ, Matrix) := opts -> (n1, M0) -> (
     if (not verifyStrategy(opts.Strategy)) then error "isRankAtLeast: Expected a valid strategy, a HashTable or MutableHashTable with expected Keys.";    
   if (opts.Threads <= 2) or (not isGlobalSymbol "nanosleep") or (allowableThreads <= 3) then (
-      if ((debugLevel > 0) or (opts.Verbose==true)) then print "isRankAtLeast: Going to single threaded version.";
+      if ((debugLevel > 0) or (opts.Verbose==true)) then printerr "isRankAtLeast: Going to single threaded version.";
       return isRankAtLeastSingle(n1, M0, opts); --single threaded version, implementation below.
   );
   if (M0 == 0) then return (n1 <= 0);
@@ -1306,11 +1302,11 @@ recursiveMinors =method(Options=>{MinorsCache => true, Threads=>0, Verbose=>fals
 
 recursiveMinors(ZZ, Matrix) := Ideal => opts -> (n, M1) -> (
     if not ((M1#cache)#?MinorsCache) then (M1.cache)#MinorsCache = new MutableHashTable from {};
-    --if not ((M1#cache)#?MinorsCache) then print "hello?";
+    --if not ((M1#cache)#?MinorsCache) then printerr "hello?";
     --if (n == numColumns M1) then M1 = transpose M1;
     H1 := null;
     if ((M1#cache)#MinorsCache)#?n then (
-        if (debugLevel > 0) or (opts.Verbose) then print "recursiveMinors: we found stored data, using it.";
+        if (debugLevel > 0) or (opts.Verbose) then printerr "recursiveMinors: we found stored data, using it.";
         H1 = ((M1#cache)#MinorsCache)#n; )
     else (
         H1 = recursiveMinorsTableP(n, M1, opts);
@@ -1326,7 +1322,7 @@ recursiveMinorsTableP = method(Options=>{MinorsCache => true, Threads=>0, Verbos
 recursiveMinorsTableP(ZZ, Matrix) := opts -> (n, M1) -> (
     if not ((M1#cache)#?MinorsCache) then (M1.cache)#MinorsCache = new MutableHashTable from {};
     if (opts.Threads <= 1) or (not isGlobalSymbol "nanosleep") then (
-        if (debugLevel > 0) then print "recursiveMinorsP: Going to single threaded version.";
+        if (debugLevel > 0) then printerr "recursiveMinorsP: Going to single threaded version.";
         return recursiveMinorsTable(n, M1);
     );
     rowCt := numRows M1;
@@ -1339,7 +1335,7 @@ recursiveMinorsTableP(ZZ, Matrix) := opts -> (n, M1) -> (
     if (debugLevel > 0) then    print ("recursiveMinorsTableP: about to recurse, minors of size" | toString(n));
     if (n > 2) then (
         if ((M1.cache).MinorsCache)#?(n-1) then (
-            if (debugLevel > 0) then print "recursiveMinorsTable: we found stored data, using it to avoid recursion.";
+            if (debugLevel > 0) then printerr "recursiveMinorsTable: we found stored data, using it to avoid recursion.";
             R1 = ((M1.cache).MinorsCache)#(n-1); )
         else (
             R1 = recursiveMinorsTableP(n-1, submatrix'(M1, {rowCt-1}, ),opts);
@@ -1347,14 +1343,14 @@ recursiveMinorsTableP(ZZ, Matrix) := opts -> (n, M1) -> (
     )
     else (
         if ((M1.cache).MinorsCache)#?n then (
-            if (debugLevel > 0) then print "recursiveMinorsTableP: we found stored data, using it.";
+            if (debugLevel > 0) then printerr "recursiveMinorsTableP: we found stored data, using it.";
             return ((M1.cache).MinorsCache)#n; )
         else (
             return new HashTable from  apply(L, i -> (i => det (M1^(i#0)_(i#1))) ); --this should be multithreaded too presumably...
         );
     );
     tempL := null;
-    if (debugLevel > 0) then print "recursiveMinorsTableP: did recursion, going to do tasks";
+    if (debugLevel > 0) then printerr "recursiveMinorsTableP: did recursion, going to do tasks";
     taskList := apply(opts.Threads, i -> (tempL =  take(L, {(i*(lenL-1))//(opts.Threads), ((i+1)*(lenL-1))//(opts.Threads)});    
         return createTask(temp, (tempL, n, M1, R1) ); ) );
     apply(taskList, t -> schedule t);
@@ -1371,7 +1367,7 @@ recursiveMinorsTableP(ZZ, Matrix) := opts -> (n, M1) -> (
 
 --this is just a temporary function
 temp = (Lis,n, M1, R1) -> (
-    --print "temp started";
+    --printerr "temp started";
 	K := apply(Lis, i -> (i => sum(0..n-1, curCol -> (-1)^(curCol)*M1_(i#0#(n-1), i#1#curCol)*R1#(toList drop(i#0, {n-1,n-1}), toList drop(i#1, {curCol, curCol})))));
 	return K
 );
@@ -1387,14 +1383,14 @@ recursiveMinorsTable = (n, M1) -> (
     R := {};
     if (n > 2) then (
         if ((M1.cache).MinorsCache)#?(n-1) then (
-            if (debugLevel > 0) then print "recursiveMinorsTable: we found stored data, using it to avoid recursion.";
+            if (debugLevel > 0) then printerr "recursiveMinorsTable: we found stored data, using it to avoid recursion.";
             R = ((M1.cache).MinorsCache)#(n-1); )
         else (
             R = recursiveMinorsTable(n-1, submatrix'(M1, {rowCt-1}, )))
         )
     else (
         if ((M1.cache).MinorsCache)#?n then (
-            if (debugLevel > 0) then print "recursiveMinorsTable: we found stored data, using it.";
+            if (debugLevel > 0) then printerr "recursiveMinorsTable: we found stored data, using it.";
             return ((M1.cache).MinorsCache)#n; )
         else (
             return new HashTable from  apply(L, i -> (i => det (M1^(i#0)_(i#1))) )
