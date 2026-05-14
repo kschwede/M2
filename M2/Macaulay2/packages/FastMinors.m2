@@ -1,5 +1,5 @@
 newPackage( "FastMinors",
-Version => "1.2.6", Date => "May 15th, 2023", Authors => {
+Version => "1.3.1", Date => "May 13th, 2026", Authors => {
     {Name => "Boyana Martinova",
     Email=> "martinova@wisc.edu",
     HomePage=> "https://sites.google.com/view/bmartinova"
@@ -18,7 +18,7 @@ Version => "1.2.6", Date => "May 15th, 2023", Authors => {
 }, --this file is in the public domain
     Headline => "faster linear algebra operations",
     PackageImports => {"Complexes"},
-    PackageExports => {"RandomPoints"},
+    PackageExports => {"RandomPoints",  "PrimaryDecomposition"},
     DebuggingMode => false, Reload=>false,
 Keywords => {"Linear Algebra"},
 Certification => {
@@ -87,7 +87,8 @@ export{
   "PointOptions", --options to be based to the RandomPoints package
   "UseOnlyFastCodim",
   "RegularInCodimensionTutorial", --help file
-  "FastMinorsStrategyTutorial"
+  "FastMinorsStrategyTutorial",
+  "VerifyNonRegular"
 }
 
 protect MutableSmallest;
@@ -167,7 +168,8 @@ optRn := {
     UseOnlyFastCodim => false, 
 --    DegreeFunction => ( (t,i) -> ceiling((i+1)*t))
     SPairsFunction => (i -> ceiling(i^1.5)),
-    PointOptions => optPoints
+    PointOptions => optPoints,
+    VerifyNonRegular => false
 };
 
 optInternalChooseMinor := {
@@ -183,7 +185,7 @@ optProjDim := {
     Verbose => false,
     Strategy => StrategyDefault,
     DetStrategy => Cofactor,
-    MaxMinors => ((x,y) -> 5*x + 2*log_1.3(y)),
+    MaxMinors => ((x,y) -> 5*x + max(0, 2*log_1.3(y))),
     PointOptions => optPoints
 };
 
@@ -847,7 +849,9 @@ regularInCodimension(ZZ, Ring) := opts -> (n1, R1) -> (
         R1a = ambR/Id;
     );
 
-    if not (isField coefficientRing ambR) then return "Ambient ring is not field";
+    if not (isField coefficientRing ambR) then return "Ambient coefficient ring is not field";
+    if (not instance(ambR, PolynomialRing)) then return "Ambient ring is not a polynomial ring";
+    if (Id == 0) then return true;
 
     M1 := sub(jacobian Id, ambR);
     numberRelations := numColumns(M1);
@@ -894,6 +898,11 @@ regularInCodimension(ZZ, Ring) := opts -> (n1, R1) -> (
     myRandom := 0;
     local M2;
     local submatrixS1;
+    local decompList;
+    local dimList;
+    local ij;
+    local kQ;
+    local Mi6;   
     nextCodimCheck := opts.CodimCheckFunction(initToCompute);
     if (opts.Verbose or debugLevel > 0) then print concatenate("regularInCodimension: About to enter loop");
     while ( (r-d <= n1) and (i < numberOfMinorsCompute) and (#searchedSet < possibleMinors)) do (   
@@ -920,6 +929,21 @@ regularInCodimension(ZZ, Ring) := opts -> (n1, R1) -> (
             if (opts.Verbose or debugLevel > 0) then print concatenate("regularInCodimension:  isCodimAtLeast failed, computing codim.");            
             quotient1 = ambR/(Id+sumMinors);
             d = dim(ideal quotient1);
+        );
+        if (opts.VerifyNonRegular) and (r-d <= n1) then (--if we should try to check if the ring is not regular
+            if (opts.Verbose or debugLevel > 0) then print "regularInCodimension: verify nonregularity";
+            decompList = minprimes(Id + sumMinors);
+            dimList = apply(decompList, jj -> dim jj);            
+            ij = 0;                         
+            while (ij < #dimList) do (
+                if (r - dimList#ij <= n1) then (--check if the ring is regular at the generic point of this prime
+                    --idealHt = r - dimList#ij;
+                    kQ = frac(ambR / decompList#ij);
+                    Mi6 = sub(M1, kQ);
+                    if (rank Mi6 < fullRank) then return false;
+                );
+                ij = ij + 1;
+            );
         );
         if (opts.Verbose or debugLevel > 0) then print concatenate("regularInCodimension:  partial singular locus dimension computed, = ", toString(d));
         --j = j+1;
@@ -1005,6 +1029,7 @@ projDim(Module) := opts -> (N1) -> (
     myRes := resolution minimalPresentation N1;
     myDiffs := myRes.dd;
     myLength := length myRes;
+    if (myLength == 0) then return 0;
     firstRank := rank myRes_myLength;
     if (debugLevel > 0) or opts.Verbose then print concatenate("projDim: resolution computed!  length =", toString myLength, " rank =", toString firstRank);
     firstDiff := myDiffs_myLength;
@@ -1578,6 +1603,13 @@ doc ///
             {\bf Summary.}  If you expect that finding a submatrix or computing a minor is relatively costly from a time perspective, then it makes sense to compute the codimension more frequently.  If computing the codimension is relatively costly we recommend computing the codimension less frequently, or using the {\tt UseOnlyFastCodim => true} with a high {\tt PairLimit}.  For example, if using {\tt StrategyPoints}, then choosing a submatrix can be quite slow, however each submatrix is very ``valuable'', in that adding it to the ideal of minors so far is quite likely to reduce the dimension of the singular locus.
             
             One may also change how minors (determinants of the Jacobian submatrix) are computed by using the @TO DetStrategy@ option.  
+        Text
+            {\bf Proving a singularity is not regular.}
+        Text
+            Sometimes you think that a variety is not regular in codimension n.  In that case, you can use the option {\tt VerifyNonRegular=>true}.  Below we have an example of a nodal elliptic curve cross P^1 expressed as a Segre prodcut, it is not even regular in codimension 1.
+        Example
+            B = ZZ/103[a,b,c,d,e,f]/ideal(d*e-c*f,b*e-a*f,b*c-a*d,b^3-b^2*f-d^2*f,a*b^2-a*b*f-c*d*f,a^2*b-a^2*f-c^2*f,a^3-a^2*e-c^2*e)
+            regularInCodimension(1, B, VerifyNonRegular=>true)
     SeeAlso
         regularInCodimension
         FastMinorsStrategyTutorial
@@ -1801,6 +1833,7 @@ doc ///
         [regularInCodimension, PairLimit]
         [regularInCodimension, UseOnlyFastCodim]
         [regularInCodimension, SPairsFunction]
+        [regularInCodimension, VerifyNonRegular]
         MinMinorsFunction
         CodimCheckFunction
         UseOnlyFastCodim
@@ -1870,6 +1903,10 @@ doc ///
             The function {\tt regularInCodimension} does not recompute determinants, so {\tt MaxMinors} or is only an upper bound on the number of minors computed.            
         Example
             time regularInCodimension(2, S, Verbose=>true, MaxMinors=>30)
+        Text
+            If you set the option {\tt VerifyNonRegular => true}, then Macaulay2 will try to verify that the ring is not regular in codimension n.  Turning this on means that when the set where the minors computed so far has codimension n, then it evaluates the matrix at the generic point of a minimal prime of that set.  If that evaluated Jacobian matrix has too low of a rank, then one has verified that variety is not regular in codimemsion n.  We consider the same example as above, but notice now the function returns false instead of true.  This sometimes can be slower and sometimes can be faster.
+        Example
+            time regularInCodimension(2, S, VerifyNonRegular=>true)
         Text
             This function has many options which allow you to fine tune the strategy used to find interesting minors.
             You can pass it a {\tt HashTable} specifying the strategy via the option {\tt Strategy}.  See @TO LexSmallest@ for how to construct this {\tt HashTable}.
@@ -2421,6 +2458,36 @@ TEST /// --check #17 (checking multi-graded support)
     chooseGoodMinors(10, 2, M)
 ///
 
+TEST ///--check #18 (doing a projdim check)
+    R = QQ[x,y];
+    A = matrix {{-2*y+1, x^2+y^2-y, 2*x*y-x}, {2*x, 0, 2*y^2-2*y}};
+    B = matrix {{2*x*y-x, 4*x^2-1}, {2*y^2-2*y, 4*x*y-2*x}};
+    imA = image A;
+    imB = image B;
+    assert((projDim imA == 0) and (projDim imB == 0))
+///
+
+TEST ///--check #19 (checking [regularInCodim, VerifyNonRegular])
+    R = QQ[x,y,z]/(x^4+y^4+z^4)
+    S = QQ[a,b,c,d,e,f]
+    phi = map(R, S, first entries basis(2, R))
+    I = ker phi
+    A = S/I
+    assert(regularInCodimension(1, A))
+    assert(not regularInCodimension(2, A, VerifyNonRegular=>true))
+    C = ZZ/7[u,v,w]/(u^2*w-v^3)
+    assert(not regularInCodimension(1, C, VerifyNonRegular=>true))
+///
+
 
 
 end
+T = ZZ/101[x1,x2,x3,x4,x5,x6,x7];
+ I =  ideal(x5*x6-x4*x7,x1*x6-x2*x7,x5^2-x1*x7,x4*x5-x2*x7,x4^2-x2*x6,x1*x4-x2*x5,x2*x3^3*x5+3*x2*x3^2*x7+8*x2^2*x5+3*x3*x4*x7-8*x4*x7+x6*x7,x1*x3^3*x5+3*x1*x3^2*x7+8*x1*x2*x5+3*x3*x5*x7-8*x5*x7+x7^2,x2*x3^3*x4+3*x2*x3^2*x6+8*x2^2*x4+3*x3*x4*x6-8*x4*x6+x6^2,x2^2*x3^3+3*x2*x3^2*x4+8*x2^3+3*x2*x3*x6-8*x2*x6+x4*x6,x1*x2*x3^3+3*x2*x3^2*x5+8*x1*x2^2+3*x2*x3*x7-8*x2*x7+x4*x7,x1^2*x3^3+3*x1*x3^2*x5+8*x1^2*x2+3*x1*x3*x7-8*x1*x7+x5*x7);
+ R=T/I;
+regularInCodimension(1, R, Strategy=>StrategyDefault)
+
+S = ZZ/101[x_1..x_8]
+    I = ideal(x_6^2-x_5*x_8,x_2*x_6-x_3*x_8,x_1*x_6-x_2*x_7,x_2*x_5-x_3*x_6,x_1*x_5-x_3*x_7,x_1*x_2+x_1*x_3+x_2*x_3+x_4*x_6,x_3*x_4*x_7+x_5*x_6+x_5*x_7+x_6*x_7,x_2*x_4*x_7+x_6*x_7+x_5*x_8+x_7*x_8,x_2*x_3*x_7+x_1*x_3*x_8+x_3^2*x_8+x_4*x_5*x_8,x_1*x_3*x_7+x_4*x_6*x_7-x_1^2*x_8-2*x_1*x_3*x_8-x_3^2*x_8-x_4*x_5*x_8-x_4*x_7*x_8,x_2^2*x_7-x_1*x_3*x_8,x_3^2*x_6+x_4*x_5*x_6+x_3^2*x_7-x_1*x_3*x_8-x_3^2*x_8-x_4*x_5*x_8,x_2*x_3*x_4+x_4^2*x_6-x_3*x_6-2*x_2*x_7-x_3*x_7-x_1*x_8-x_3*x_8,x_1*x_3*x_4+x_3*x_6+x_2*x_7+x_3*x_7,x_3^3+x_3*x_4*x_5+x_5^2+x_5*x_6,x_2*x_3^2+x_3*x_4*x_6+x_5*x_6+x_5*x_8,x_1*x_3^2-x_5*x_6,x_2^2*x_3+x_3*x_4*x_8+x_5*x_8+x_6*x_8,x_1^2*x_3-x_6*x_7,x_2^3+x_2*x_4*x_8+x_6*x_8+x_8^2,x_1^3+x_1*x_4*x_7+x_6*x_7+x_7^2,x_3^2*x_4*x_8+x_4^2*x_5*x_8-x_3*x_6*x_7-x_3*x_5*x_8-x_3*x_6*x_8-x_2*x_7*x_8-2*x_3*x_7*x_8,x_1^2*x_4*x_8+x_4^2*x_7*x_8-x_2*x_7^2-x_3*x_6*x_8-x_1*x_7*x_8-x_2*x_7*x_8-2*x_3*x_7*x_8,x_4*x_5*x_6*x_7+x_3^2*x_7^2-x_3^2*x_5*x_8-x_4*x_5^2*x_8-2*x_3^2*x_7*x_8-x_4*x_5*x_7*x_8+x_4*x_6*x_7*x_8-x_1^2*x_8^2-2*x_1*x_3*x_8^2-x_3^2*x_8^2-x_4*x_5*x_8^2-x_4*x_7*x_8^2,x_4^2*x_6*x_7-2*x_3*x_6*x_7-2*x_2*x_7^2-x_3*x_7^2-x_3*x_5*x_8-x_1*x_7*x_8-2*x_3*x_7*x_8,x_4^2*x_5*x_7*x_8-x_3*x_6*x_7^2-x_3*x_5*x_6*x_8-2*x_3*x_5*x_7*x_8-2*x_3*x_6*x_7*x_8-x_2*x_7^2*x_8-2*x_3*x_7^2*x_8)
+    dim R
+    time assert(not regularInCodimension(2, R, VerifyNonRegular=>true))
