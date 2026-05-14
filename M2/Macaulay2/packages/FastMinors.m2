@@ -237,6 +237,7 @@ chooseSubmatrixLargestDegree(ZZ, Matrix) := opts -> (n1, M1) -> (
     i := 0;
     j := 0;
     curM1 := M1;
+    if (n1 < 0) or (n1 > min(rCt, cCt)) then error "chooseSubmatrixLargestDegree: not a valid submatrix size";
     --degreeMatrx := matrix apply(entries M1, l1 -> apply(l1, i->degree i));
     curList := null;
     curMax := null;
@@ -426,7 +427,7 @@ replaceZeros(Matrix):= Matrix => opts->(M2) -> (
     largeGen:= null;
     if (instance(ring M2, PolynomialRing) or instance(ring M2, QuotientRing)) then (largeGen = (product gens myAmbient ring M2)^(2*largeDeg+2)) else (largeGen = (max(flatten entries M2))^2);
     if (sub(largeGen, ring M2) == 0) then (largeGen = (max(flatten entries M2))^2);
-    if (sub(largeGen, ring M2) == 0) then (largeGen == sub(1, ring M2));
+    if (sub(largeGen, ring M2) == 0) then (largeGen = sub(1, ring M2));
     largeGen = sub(largeGen, ring M2);
     unMute := matrix apply(entries M2, c -> apply(c, i->(if (i == 0) then largeGen else i)));
 
@@ -462,6 +463,7 @@ chooseSubmatrixSmallestDegree(ZZ, Matrix) := o -> (n1, M3) -> (
           M1 := new Matrix from M3;
           rCt := numRows M1;
           cCt := numColumns M1;
+          if (n1 < 0) or (n1 > min(rCt, cCt)) then error "chooseSubmatrixDegree: not a valid submatrix size";
           i := 0;
           j := 0;
           curM1 := M1;
@@ -474,7 +476,7 @@ chooseSubmatrixSmallestDegree(ZZ, Matrix) := o -> (n1, M3) -> (
 
           returnRowList := {};
           returnColList := {};
-
+          
           while (i < n1) do (
               --print concatenate("in loop, i =", toString(i));
               curList = flatten entries curM1;
@@ -624,6 +626,9 @@ chooseRandomSubmatrix = method(Options=>{});
 
 chooseRandomSubmatrix(ZZ, Matrix) := opts -> (n1, M1) ->
 (
+    rCt := numRows M1;
+    cCt := numColumns M1;
+    if (n1 < 0) or (n1 > min(rCt, cCt)) then error "chooseRandomSubmatrix: not a valid submatrix size";
     rowL := randomSubset(numRows M1, n1);
     colL := shuffle(toList(0..<numColumns M1), n1);
     return {rowL, colL};
@@ -849,8 +854,8 @@ regularInCodimension(ZZ, Ring) := opts -> (n1, R1) -> (
         R1a = ambR/Id;
     );
 
-    if not (isField coefficientRing ambR) then return "Ambient coefficient ring is not field";
-    if (not instance(ambR, PolynomialRing)) then return "Ambient ring is not a polynomial ring";
+    if not (isField coefficientRing ambR) then error "Ambient coefficient ring is not field";
+    if (not instance(ambR, PolynomialRing)) then error "Ambient ring is not a polynomial ring";
     if (Id == 0) then return true;
 
     M1 := sub(jacobian Id, ambR);
@@ -931,7 +936,7 @@ regularInCodimension(ZZ, Ring) := opts -> (n1, R1) -> (
             d = dim(ideal quotient1);
         );
         if (opts.VerifyNonRegular) and (r-d <= n1) then (--if we should try to check if the ring is not regular
-            if (opts.Verbose or debugLevel > 0) then print "regularInCodimension: verify nonregularity";
+            if (opts.Verbose or debugLevel > 0) then printerr "regularInCodimension: verify nonregularity";
             decompList = minprimes(Id + sumMinors);
             dimList = apply(decompList, jj -> dim jj);            
             ij = 0;                         
@@ -952,8 +957,8 @@ regularInCodimension(ZZ, Ring) := opts -> (n1, R1) -> (
     );
     if (opts.Verbose or debugLevel > 0) then print concatenate("regularInCodimension:  Loop completed, submatrices considered = ", toString(i), ", and computed = ", toString(# keys searchedSet), ".  singular locus dimension appears to be = ", toString(d));
     if ( r-d > n1) then (return true);
-    if  (r-d<n+1) and (#searchedSet <= possibleMinors) then (return null);
-    if (#searchedSet == possibleMinors) and ((r-d)<n1+1) then (return false);
+    if (#searchedSet == possibleMinors) and ((r-d)<n1+1) then (return false); --if we checked all minors...
+    return null; --if we can't determine based on the work done, return null
 );
 
 
@@ -968,11 +973,14 @@ chooseGoodMinors(ZZ, ZZ, Matrix) := opts -> (howMany, minorSize, M1) -> (
 
 chooseGoodMinors(ZZ, ZZ, Matrix, Ideal) := opts -> (howMany, minorSize, M1, I1) -> (
     if (not verifyStrategy(opts.Strategy)) then error "chooseGoodMinors: Expected a valid strategy, a HashTable or MutableHashTable with expected Keys.";
+    rCt := numRows M1;
+    cCt := numColumns M1;
+    if (minorSize < 0) or (minorSize > min(rCt, cCt)) then error "chooseGoodMinors: not a valid submatrix size";
     R1 := ring M1;
     if (howMany <= 0) then return trim ideal(sub(0, R1));
     ambR := myAmbient R1;
     Id := sub(I1, ambR) + ideal(R1);
-    possibleMinors := binomial(numColumns M1, minorSize)*binomial(numRows M1, minorSize);
+    possibleMinors := binomial(cCt, minorSize)*binomial(rCt, minorSize);
     M1 = sub(M1, ambR);
     mutM1 := mutableMatrix(M1);
     nonzeroM := replaceZeros(M1, Strategy=>opts.Strategy); --
@@ -1257,7 +1265,7 @@ getSubmatrixOfRank(ZZ, Matrix) := opts -> (n1, M0) -> (
     subMatrix := null;
     val := null;
     if (debugLevel > 0) or opts.Verbose then print ("getSubmatrixOfRank: Trying to find a submatrix of rank at least: " | toString(n1) | " with attempts = " | toString(attempts) | ".  DetStrategy=>" | toString(opts.DetStrategy));
-    while (i < attempts)  do (
+    while (i < attempts) and (#searchedSet < possibleMinors) do (
         --if any(flatten entries matrix mutM2, z->z==0) then error "getSubmatrixOfRank: expected a matrix with no zero entries.";
         subMatrix = internalChooseMinor(n1,  Id, nonzeroM, M1, internalMinorsOptions++{MutableSmallest=>mutM2, MutableLargest=>mutM1});
         --if (debugLevel > 0) or opts.Verbose then print ("getSubmatrixOfRank: found subMatrix " | toString(subMatrix));
@@ -1844,6 +1852,7 @@ doc ///
     Inputs
         n: ZZ
         R: Ring
+            an equidimensional quotient of a polynomial ring over a field
         Modulus => Number
             work modulo the given prime modulus
         PairLimit => Number
@@ -1863,7 +1872,7 @@ doc ///
             true, if the ring is regular in codimension n, false if it determines it is not, and null if no determination is made
     Description
         Text
-            This function returns {\tt true} if R is regular in codimension {\tt n}, {\tt false} if it is not, and {\tt null} if it did not make a determination.
+            This function returns {\tt true} if R is regular in codimension {\tt n}, {\tt false} if it is not, and {\tt null} if it did not make a determination.  We assume that R is equidimensional and it is a quotient ring of a polynoimal ring over a field.
             It considers interesting minors of the jacobian matrix to try to verify that the ring is regular in codimension {\tt n}.
             It is frequently much faster at giving an affirmative answer than computing the dimension of the ideal of all minors of the Jacobian.
             We begin with a simple example which is R1, but not R2.
