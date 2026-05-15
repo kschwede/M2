@@ -1,19 +1,23 @@
 newPackage( "FastMinors",
 Version => "1.3.1", Date => "May 13th, 2026", Authors => {
-    {Name => "Boyana Martinova",
-    Email=> "martinova@wisc.edu",
-    HomePage=> "https://sites.google.com/view/bmartinova"
+    {
+        Name => "Boyana Martinova",
+        Email=> "martinova@wisc.edu",
+        HomePage=> "https://sites.google.com/view/bmartinova"
     },
-    {Name => "Marcus Robinson",
-    Email => "mrobinso@reed.edu",
-    HomePage => "https://people.reed.edu/~mrobinso/"
+    {
+        Name => "Marcus Robinson",
+        Email => "mrobinso@reed.edu",
+        HomePage => "https://people.reed.edu/~mrobinso/"
     },
-    {Name => "Karl Schwede",
-    Email=> "schwede@math.utah.edu",
-    HomePage=> "http://www.math.utah.edu/~schwede"
+    {
+        Name => "Karl Schwede",
+        Email=> "schwede@math.utah.edu",
+        HomePage=> "http://www.math.utah.edu/~schwede"
     },
-    {Name => "Yuhui (Wei) Yao",
-    Email=> "yuhuiyao4ever@gmail.com"
+    {
+        Name => "Yuhui (Wei) Yao",
+        Email=> "yuhuiyao4ever@gmail.com"
     }
 }, --this file is in the public domain
     Headline => "faster linear algebra operations",
